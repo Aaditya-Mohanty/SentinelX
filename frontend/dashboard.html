@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelX AI — Security Operations Console</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #080c14;
+            color: #e5e7eb;
+        }
+        .heading-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .glass {
+            background: rgba(13, 20, 35, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .matrix-cell {
+            transition: all 0.2s ease;
+        }
+        .matrix-cell:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080c14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-full md:w-64 bg-[#0a0e1a] border-r border-gray-800 flex flex-col justify-between flex-shrink-0 z-30">
+        <div>
+            <!-- Sidebar Header logo -->
+            <div class="p-6 border-b border-gray-800 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center font-bold text-lg text-white">S</div>
+                <div>
+                    <h1 class="text-md font-bold heading-font tracking-wide text-white">SentinelX <span class="text-cyan-400 font-extrabold text-[10px] border border-cyan-500/30 px-1 py-0.2 rounded ml-0.5 bg-cyan-950/20">AI</span></h1>
+                    <p class="text-[8px] text-gray-500 tracking-widest uppercase">Security Operations Center</p>
+                </div>
+            </div>
+
+            <!-- Sidebar Navigation Links -->
+            <nav class="p-4 space-y-1">
+                <button onclick="switchTab('overview')" id="nav-overview" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold transition-all text-cyan-400 bg-cyan-500/5 border border-cyan-500/10">
+                    <i class="fa-solid fa-chart-pie w-4"></i> Overview
+                </button>
+                <button onclick="switchTab('alerts')" id="nav-alerts" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold text-gray-400 hover:text-white hover:bg-gray-800/40 transition-all">
+                    <i class="fa-solid fa-triangle-exclamation w-4"></i> Live Alerts
+                </button>
+                <button onclick="switchTab('mitre')" id="nav-mitre" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold text-gray-400 hover:text-white hover:bg-gray-800/40 transition-all">
+                    <i class="fa-solid fa-grid-2x2 w-4"></i> MITRE ATT&CK Matrix
+                </button>
+                <button onclick="switchTab('ai-chat')" id="nav-ai-chat" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold text-gray-400 hover:text-white hover:bg-gray-800/40 transition-all">
+                    <i class="fa-solid fa-robot w-4"></i> AI Threat Assistant
+                </button>
+                <button onclick="switchTab('endpoints')" id="nav-endpoints" class="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-sm font-semibold text-gray-400 hover:text-white hover:bg-gray-800/40 transition-all">
+                    <i class="fa-solid fa-desktop w-4"></i> Endpoints Manager
+                </button>
+            </nav>
+        </div>
+
+        <!-- Sidebar footer profile -->
+        <div class="p-4 border-t border-gray-800 bg-[#070b14]/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-sm font-bold" id="user-avatar">U</div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs font-bold text-white truncate" id="profile-username">Loading...</p>
+                    <span class="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-extrabold" id="profile-role">Analyst</span>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="w-full py-2 border border-red-500/20 hover:bg-red-500/10 rounded-lg text-xs font-bold text-red-400 transition-colors flex items-center justify-center gap-2">
+                <i class="fa-solid fa-sign-out-alt"></i> Disconnect Session
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN DISPLAY WRAPPER -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- TOP NAVBAR -->
+        <header class="w-full h-16 border-b border-gray-800 bg-[#090e19] px-6 flex justify-between items-center flex-shrink-0 z-20">
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-gray-500" id="current-time-badge">Time: 2026-05-23 00:00:00</span>
+                <span class="text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded flex items-center gap-1.5" id="ws-status">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Websocket Online
+                </span>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span class="hidden md:inline-flex text-[10px] font-mono border border-cyan-500/20 px-2.5 py-1 rounded bg-cyan-950/20 text-cyan-400 font-semibold" id="edition-badge">Community Edition</span>
+                
+                <!-- ATTACK SIMULATOR (Available to Admin/Demo) -->
+                <div id="sim-control-panel" class="relative group">
+                    <button class="bg-red-950/40 border border-red-500/30 text-red-400 font-bold text-xs px-3.5 py-1.5 rounded hover:bg-red-900/20 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-flask"></i> Simulation Range <i class="fa-solid fa-angle-down text-[10px]"></i>
+                    </button>
+                    <!-- Dropdown -->
+                    <div class="absolute right-0 top-full mt-2 w-56 bg-gray-950 border border-gray-800 rounded-lg shadow-2xl hidden group-hover:block z-50 p-2 space-y-1">
+                        <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold px-2 py-1 border-b border-gray-900 mb-1">Simulate Attack Log</p>
+                        <button onclick="triggerSimulatedAttack('brute_force')" class="w-full text-left px-2 py-1.5 hover:bg-gray-900 rounded text-xs text-gray-300 hover:text-white flex justify-between">
+                            <span>SSH Brute Force</span> <span class="text-yellow-500">T1110</span>
+                        </button>
+                        <button onclick="triggerSimulatedAttack('sqli')" class="w-full text-left px-2 py-1.5 hover:bg-gray-900 rounded text-xs text-gray-300 hover:text-white flex justify-between">
+                            <span>SQL Injection</span> <span class="text-orange-500">T1190</span>
+                        </button>
+                        <button onclick="triggerSimulatedAttack('malware')" class="w-full text-left px-2 py-1.5 hover:bg-gray-900 rounded text-xs text-gray-300 hover:text-white flex justify-between">
+                            <span>Malware Persistence</span> <span class="text-red-500">T1059</span>
+                        </button>
+                        <button onclick="triggerSimulatedAttack('privilege')" class="w-full text-left px-2 py-1.5 hover:bg-gray-900 rounded text-xs text-gray-300 hover:text-white flex justify-between">
+                            <span>Privilege Escalation</span> <span class="text-red-500">T1068</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD BODY CONTENT (Scrollable) -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6" id="dashboard-tab-content">
+            
+            <!-- OVERVIEW TAB -->
+            <section id="tab-overview" class="space-y-6">
+                <!-- Metrics Panel -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <!-- Widget 1 -->
+                    <div class="glass p-5 rounded-xl border-l-4 border-cyan-500">
+                        <div class="flex justify-between items-center text-gray-500 mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Monitored Host Assets</span>
+                            <i class="fa-solid fa-desktop text-cyan-400"></i>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-extrabold text-white" id="stat-endpoints">0</span>
+                            <span class="text-[10px] text-emerald-400 font-semibold" id="stat-online-endpoints">0 active</span>
+                        </div>
+                    </div>
+                    <!-- Widget 2 -->
+                    <div class="glass p-5 rounded-xl border-l-4 border-yellow-500">
+                        <div class="flex justify-between items-center text-gray-500 mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Unresolved Events</span>
+                            <i class="fa-solid fa-bell-slash text-yellow-500"></i>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-extrabold text-white" id="stat-unresolved-alerts">0</span>
+                            <span class="text-[10px] text-yellow-500 font-semibold">triage needed</span>
+                        </div>
+                    </div>
+                    <!-- Widget 3 -->
+                    <div class="glass p-5 rounded-xl border-l-4 border-red-500">
+                        <div class="flex justify-between items-center text-gray-500 mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Critical Incidents</span>
+                            <i class="fa-solid fa-skull-crossbones text-red-500"></i>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-extrabold text-white" id="stat-critical-alerts">0</span>
+                            <span class="text-[10px] text-red-400 font-semibold animate-pulse">immediate action</span>
+                        </div>
+                    </div>
+                    <!-- Widget 4 -->
+                    <div class="glass p-5 rounded-xl border-l-4 border-purple-500">
+                        <div class="flex justify-between items-center text-gray-500 mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider">System Risk Score</span>
+                            <i class="fa-solid fa-shield-halved text-purple-400"></i>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-extrabold text-white" id="stat-risk-score">0</span>
+                            <span class="text-xs font-bold" id="risk-score-eval">/100 Safe</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Display Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Column 1: Live Alert Feed list overview -->
+                    <div class="glass p-6 rounded-xl md:col-span-2 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-sm font-bold uppercase tracking-wider text-white">Live Threat Vectors Stream</h3>
+                                <span class="text-[10px] bg-red-500/10 text-red-400 px-2 py-0.5 border border-red-500/20 rounded font-bold animate-pulse">Real-Time Ingestion</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-gray-800 text-gray-500 pb-2">
+                                            <th class="py-2">Tactic / Technique</th>
+                                            <th class="py-2">Source Host</th>
+                                            <th class="py-2">Severity</th>
+                                            <th class="py-2">MITRE ID</th>
+                                            <th class="py-2 text-right">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="overview-alerts-body" class="divide-y divide-gray-900">
+                                        <tr>
+                                            <td colspan="5" class="py-6 text-center text-gray-600">No security logs recorded yet. Run the Python Agent script on an endpoint or trigger simulation.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <button onclick="switchTab('alerts')" class="text-cyan-400 hover:text-cyan-300 text-xs font-bold text-left mt-6 hover:underline flex items-center gap-1">
+                            Go to security investigation console <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Column 2: Threat Severity chart & Endpoint summary -->
+                    <div class="glass p-6 rounded-xl space-y-6 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-white mb-6">Threat Severity Metrics</h3>
+                            <div class="relative flex items-center justify-center min-h-[160px]">
+                                <canvas id="chart-severity"></canvas>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-800 pt-4 space-y-3">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Asset Distribution</h4>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">Total Registered Agents:</span>
+                                <span id="dist-total" class="font-bold text-white">0</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">Online Linux VM:</span>
+                                <span id="dist-linux" class="font-bold text-cyan-400">0</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-500">Online Windows VM:</span>
+                                <span id="dist-windows" class="font-bold text-indigo-400">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- LIVE ALERTS TAB -->
+            <section id="tab-alerts" class="space-y-6 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white uppercase tracking-wider heading-font">Live Security Alerts & SIEM Logs</h2>
+                        <p class="text-xs text-gray-500 mt-1">Audit, filter, and analyze incoming endpoint logs matching correlation rules.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="exportAlertsCSV()" class="border border-gray-800 bg-gray-900/60 hover:bg-gray-800 text-gray-300 px-3.5 py-1.5 rounded text-xs font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-file-csv"></i> Export CSV
+                        </button>
+                        <button onclick="exportAlertsPDF()" class="border border-gray-800 bg-gray-900/60 hover:bg-gray-800 text-gray-300 px-3.5 py-1.5 rounded text-xs font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-file-pdf"></i> Export incident Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Card -->
+                <div class="glass p-4 rounded-xl flex flex-wrap gap-4 items-center">
+                    <div class="flex-1 min-w-[200px]">
+                        <input type="text" id="filter-search" oninput="applyAlertFilters()" placeholder="Search alert type, MITRE ID, description..." class="w-full bg-gray-900/80 border border-gray-800 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div>
+                        <select id="filter-severity" onchange="applyAlertFilters()" class="bg-gray-900/80 border border-gray-800 rounded-lg py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500">
+                            <option value="">All Severities</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="filter-status" onchange="applyAlertFilters()" class="bg-gray-900/80 border border-gray-800 rounded-lg py-2 px-3 text-xs text-gray-300 focus:outline-none focus:border-cyan-500">
+                            <option value="">All Statuses</option>
+                            <option value="unresolved">Unresolved</option>
+                            <option value="resolved">Resolved</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Alerts Table Grid -->
+                <div class="glass rounded-xl overflow-hidden border border-gray-800">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-gray-900/40 text-gray-400 border-b border-gray-800">
+                                    <th class="p-4">Tactic / Threat Signature</th>
+                                    <th class="p-4">Endpoint</th>
+                                    <th class="p-4">Severity</th>
+                                    <th class="p-4">MITRE Technique</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Timestamp</th>
+                                    <th class="p-4 text-center">AI Analysis</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alerts-table-body" class="divide-y divide-gray-900">
+                                <tr>
+                                    <td colspan="8" class="p-6 text-center text-gray-600">No alerts matching filters found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Expanded AI Threat Report Triage Overlay Modal/Box -->
+                <div id="ai-triage-panel" class="hidden glass p-6 rounded-xl border-l-4 border-cyan-500 space-y-4">
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wider">AI Analyst Forensic Briefing</h3>
+                        </div>
+                        <button onclick="closeTriagePanel()" class="text-gray-500 hover:text-white font-bold">&times; Close</button>
+                    </div>
+                    <div class="prose prose-invert max-w-none text-xs text-gray-300 leading-relaxed font-mono whitespace-pre-wrap" id="ai-triage-content">
+                        Loading AI briefing report...
+                    </div>
+                </div>
+            </section>
+
+            <!-- MITRE ATT&CK HEATMAP -->
+            <section id="tab-mitre" class="space-y-6 hidden">
+                <div>
+                    <h2 class="text-lg font-bold text-white uppercase tracking-wider heading-font">MITRE ATT&CK Matrix Heatmap</h2>
+                    <p class="text-xs text-gray-500 mt-1">Tactical progression chart of mapped threat techniques detected within tenant scope.</p>
+                </div>
+
+                <!-- Matrix Heatmap Structure -->
+                <div class="glass p-6 rounded-xl overflow-x-auto">
+                    <div class="grid grid-cols-6 gap-3.5 min-w-[900px]">
+                        <!-- Column 1: Initial Access -->
+                        <div class="space-y-3">
+                            <div class="bg-gray-900 p-2.5 rounded text-center border-b-2 border-gray-800">
+                                <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">Initial Access</p>
+                            </div>
+                            <div id="mitre-T1190" onclick="explainMitre('T1190', 'Exploit Public-Facing Application')" class="matrix-cell bg-gray-900/50 border border-gray-800/80 p-3 rounded text-[11px] cursor-pointer hover:bg-gray-800/40 text-center">
+                                <span class="font-bold text-gray-300 block mb-1">T1190</span>
+                                <span class="text-[9px] text-gray-500 block">Exploit Public-Facing App</span>
+                            </div>
+                        </div>
+
+                        <!-- Column 2: Execution -->
+                        <div class="space-y-3">
+                            <div class="bg-gray-900 p-2.5 rounded text-center border-b-2 border-gray-800">
+                                <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">Execution</p>
+                            </div>
+                            <div id="mitre-T1059" onclick="explainMitre('T1059', 'Command and Scripting Interpreter')" class="matrix-cell bg-gray-900/50 border border-gray-800/80 p-3 rounded text-[11px] cursor-pointer hover:bg-gray-800/40 text-center">
+                                <span class="font-bold text-gray-300 block mb-1">T1059</span>
+                                <span class="text-[9px] text-gray-500 block">Command & Scripting</span>
+                            </div>
+                        </div>
+
+                        <!-- Column 3: Privilege Escalation -->
+                        <div class="space-y-3">
+                            <div class="bg-gray-900 p-2.5 rounded text-center border-b-2 border-gray-800">
+                                <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">Priv. Escalation</p>
+                            </div>
+                            <div id="mitre-T1068" onclick="explainMitre('T1068', 'Exploitation for Privilege Escalation')" class="matrix-cell bg-gray-900/50 border border-gray-800/80 p-3 rounded text-[11px] cursor-pointer hover:bg-gray-800/40 text-center">
+                                <span class="font-bold text-gray-300 block mb-1">T1068</span>
+                                <span class="text-[9px] text-gray-500 block">Exploit Priv. Escalation</span>
+                            </div>
+                        </div>
+
+                        <!-- Column 4: Credential Access -->
+                        <div class="space-y-3">
+                            <div class="bg-gray-900 p-2.5 rounded text-center border-b-2 border-gray-800">
+                                <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">Credential Access</p>
+                            </div>
+                            <div id="mitre-T1110" onclick="explainMitre('T1110', 'Brute Force')" class="matrix-cell bg-gray-900/50 border border-gray-800/80 p-3 rounded text-[11px] cursor-pointer hover:bg-gray-800/40 text-center">
+                                <span class="font-bold text-gray-300 block mb-1">T1110</span>
+                                <span class="text-[9px] text-gray-500 block">Brute Force Login</span>
+                            </div>
+                        </div>
+
+                        <!-- Column 5: Discovery -->
+                        <div class="space-y-3">
+                            <div class="bg-gray-900 p-2.5 rounded text-center border-b-2 border-gray-800">
+                                <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">Discovery</p>
+                            </div>
+                            <div id="mitre-T1046" onclick="explainMitre('T1046', 'Network Service Discovery')" class="matrix-cell bg-gray-900/50 border border-gray-800/80 p-3 rounded text-[11px] cursor-pointer hover:bg-gray-800/40 text-center">
+                                <span class="font-bold text-gray-300 block mb-1">T1046</span>
+                                <span class="text-[9px] text-gray-500 block">Network Discovery Scan</span>
+                            </div>
+                        </div>
+
+                        <!-- Column 6: Exfiltration -->
+                        <div class="space-y-3">
+                            <div class="bg-gray-900 p-2.5 rounded text-center border-b-2 border-gray-800">
+                                <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-wider">Exfiltration</p>
+                            </div>
+                            <div id="mitre-T1048" onclick="explainMitre('T1048', 'Exfiltration Over Alternative Protocol')" class="matrix-cell bg-gray-900/50 border border-gray-800/80 p-3 rounded text-[11px] cursor-pointer hover:bg-gray-800/40 text-center">
+                                <span class="font-bold text-gray-300 block mb-1">T1048</span>
+                                <span class="text-[9px] text-gray-500 block">Exfil Over Alternative Prot.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MITRE Explanation Brief -->
+                <div id="mitre-explanation-box" class="glass p-6 rounded-xl border border-gray-800 hidden">
+                    <h4 class="text-sm font-bold text-white mb-2" id="mitre-expl-title">Technique Info</h4>
+                    <p class="text-xs text-gray-400 leading-relaxed" id="mitre-expl-desc">Click on any technique block to review details.</p>
+                </div>
+            </section>
+
+            <!-- AI CHAT ASSISTANT -->
+            <section id="tab-ai-chat" class="space-y-6 hidden h-[calc(100vh-140px)] flex flex-col justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-white uppercase tracking-wider heading-font">SentinelX AI SOC Analyst Chatbot</h2>
+                    <p class="text-xs text-gray-500 mt-1">Discuss threat hunts, search logs, or ask for incident containment commands.</p>
+                </div>
+
+                <!-- Chat History Logs -->
+                <div class="glass flex-1 rounded-xl p-4 overflow-y-auto space-y-4 border border-gray-800 flex flex-col" id="chat-messages-container">
+                    <!-- Welcome AI message -->
+                    <div class="flex gap-3 max-w-xl bg-cyan-950/20 border border-cyan-500/10 p-3.5 rounded-lg text-xs self-start">
+                        <div class="w-7 h-7 rounded bg-cyan-500 flex items-center justify-center font-bold text-gray-950">AI</div>
+                        <div class="space-y-1">
+                            <p class="font-bold text-white">SentinelX Analyst Assistant</p>
+                            <p class="text-gray-300 leading-relaxed font-mono whitespace-pre-wrap">Hello! I am SentinelX AI. How can I assist you with threat hunting or log analysis today?</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggested Query Chips -->
+                <div class="flex flex-wrap gap-2 text-[10px] text-gray-400">
+                    <button onclick="sendChatFromChip('Explain SQL Injection remediation')" class="bg-gray-900 border border-gray-800 hover:border-gray-600 px-3 py-1 rounded-full transition-all">Explain SQLi Remediation</button>
+                    <button onclick="sendChatFromChip('Suggest actions for SSH brute force attacks')" class="bg-gray-900 border border-gray-800 hover:border-gray-600 px-3 py-1 rounded-full transition-all">SSH Brute Force Actions</button>
+                    <button onclick="sendChatFromChip('Generate a SOC incident report')" class="bg-gray-900 border border-gray-800 hover:border-gray-600 px-3 py-1 rounded-full transition-all">Generate Incident Report</button>
+                    <button onclick="sendChatFromChip('How to set up SentinelX agent')" class="bg-gray-900 border border-gray-800 hover:border-gray-600 px-3 py-1 rounded-full transition-all">Setup Agent Helper</button>
+                </div>
+
+                <!-- Input Message Bar -->
+                <form onsubmit="handleSendChatMessage(event)" class="flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Ask SentinelX AI anything (e.g., 'Draft iptables rule to drop malicious IP 198.51.100.42')..." required class="flex-1 bg-gray-900 border border-gray-800 rounded-lg py-3 px-4 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    <button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-gray-950 px-6 py-3 rounded-lg font-bold text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> Send
+                    </button>
+                </form>
+            </section>
+
+            <!-- ENDPOINTS MANAGER -->
+            <section id="tab-endpoints" class="space-y-6 hidden">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-white uppercase tracking-wider heading-font">Endpoints Manager</h2>
+                        <p class="text-xs text-gray-500 mt-1">Add, track, and monitor active light monitoring agents on your assets.</p>
+                    </div>
+                </div>
+
+                <!-- Add Agent Box -->
+                <div class="glass p-6 rounded-xl space-y-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Connect New Endpoint Agent</h3>
+                    <p class="text-xs text-gray-400">SentinelX Light Agent has zero third-party pip dependencies. Simply execute the command on your Linux/Windows host.</p>
+                    
+                    <div class="bg-gray-950 p-4 rounded-lg border border-gray-800 space-y-3 font-mono text-[11px]">
+                        <div class="flex justify-between items-center border-b border-gray-900 pb-2">
+                            <span class="text-gray-500 font-bold uppercase">Installation Command</span>
+                            <button onclick="copyInstallCommand()" class="text-cyan-400 hover:text-white flex items-center gap-1.5"><i class="fa-solid fa-copy"></i> Copy</button>
+                        </div>
+                        <!-- Command display box -->
+                        <div class="text-gray-300 break-all select-all leading-normal" id="agent-command-string">
+                            python3 -c "import urllib.request; exec(urllib.request.urlopen('http://localhost:8000/static/agent.py').read())" --token [JWT_TOKEN] --server http://localhost:8000
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Endpoint List Matrix -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="endpoint-hosts-container">
+                    <!-- Populated dynamically via JS -->
+                    <div class="glass p-6 rounded-xl flex items-center justify-center border border-dashed border-gray-800 text-gray-500 text-xs col-span-2 py-12">
+                        No endpoints registered. Run the installation script above to link your host.
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- JS Dashboard Code import -->
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

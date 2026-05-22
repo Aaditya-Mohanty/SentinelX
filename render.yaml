@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: sentinelx-api
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./sentinelx.db
+      - key: GROQ_API_KEY
+        value: gsk_mock_threat_intelligence_key_for_testing
+      - key: CORS_ORIGINS
+        value: "*"

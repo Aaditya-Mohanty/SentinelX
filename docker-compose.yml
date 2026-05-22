@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  sentinelx-soc:
+    build: .
+    container_name: sentinelx-soc-app
+    ports:
+      - "8000:8000"
+    environment:
+      - JWT_SECRET_KEY=sentinelx_secret_key_change_me_in_production_9f2b87a1
+      - DATABASE_URL=sqlite:///./sentinelx.db
+      - GROQ_API_KEY=gsk_mock_threat_intelligence_key_for_testing
+      - CORS_ORIGINS=*
+      - PORT=8000
+      - HOST=0.0.0.0
+    restart: unless-stopped

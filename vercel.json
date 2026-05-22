@@ -1,0 +1,29 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://sentinelx-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/ws/:path*",
+      "destination": "https://sentinelx-api.onrender.com/ws/:path*"
+    },
+    {
+      "source": "/static/:path*",
+      "destination": "https://sentinelx-api.onrender.com/static/:path*"
+    },
+    {
+      "source": "/(index.html)?",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/dashboard.html",
+      "destination": "/frontend/dashboard.html"
+    },
+    {
+      "source": "/js/:path*",
+      "destination": "/frontend/js/:path*"
+    }
+  ]
+}
